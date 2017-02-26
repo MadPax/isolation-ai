@@ -210,15 +210,15 @@ class CustomPlayer:
         if len(legal_moves) == 0:
             return float("-inf"), (-1,-1)
         if depth == 0:
-            if maximizing_player == True:
+            if maximizing_player:
                 return get_max_move(self, game, legal_moves)
-            elif maximizing_player == False:
+            elif not maximizing_player:
                 return get_min_move(self, game, legal_moves)
         else:
-            if maximizing_player == True:
+            if maximizing_player:
                 return max(self.minimax(game.forecast_move(move), depth - 1, False) for move in legal_moves)
 
-            elif maximizing_player == False:
+            elif not maximizing_player:
                 return min(self.minimax(game.forecast_move(move), depth - 1, True) for move in legal_moves)
 
         raise NotImplementedError
@@ -272,15 +272,15 @@ class CustomPlayer:
 
         if depth == 0:
 
-            if maximizing_player == True:
+            if maximizing_player:
                 return get_max_move(self, game, legal_moves)
 
-            elif maximizing_player == False:
+            elif not maximizing_player:
                 return get_min_move(self, game, legal_moves)
 
         else:
 
-            if maximizing_player == True:
+            if maximizing_player:
                 best_value = alpha
                 tuple_value = None
                 for move in legal_moves:
@@ -293,7 +293,7 @@ class CustomPlayer:
                             break
                 return best_value, tuple_value
 
-            elif maximizing_player == False:
+            elif not maximizing_player:
                 value = float("inf")
                 tuple_value = None
                 for move in legal_moves:
