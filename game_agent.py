@@ -39,7 +39,6 @@ def custom_score(game, player):
 
     return base_heuristic(game, player)
 
-    raise NotImplementedError
 
 def base_heuristic(game, player):
 
@@ -132,23 +131,21 @@ class CustomPlayer:
 
         self.time_left = time_left
 
-        center_position = (4,4)
-        corner_position = (0,0)
-        no_legal_moves = (-1,-1)
-
-        depth = 4
+        center_position = (4, 4)
+        corner_position = (0, 0)
+        no_legal_moves = (-1, -1)
 
         # Perform any required initializations, including selecting an initial
         # move from the game board (i.e., an opening book), or returning
         # immediately if there are no legal moves
 
-        if len(game.get_legal_moves()) == 0:
+        if len(legal_moves) == 0:
             return no_legal_moves
 
-        if len(game.get_legal_moves()) == 49:
+        if len(legal_moves) == 49:
             return center_position
 
-        if len(game.get_legal_moves()) == 48:
+        if len(legal_moves) == 48:
             if game.move_is_legal(center_position):
                 return center_position
             else:
@@ -159,11 +156,13 @@ class CustomPlayer:
             # here in order to avoid timeout. The try/except block will
             # automatically catch the exception raised by the search method
             # when the timer gets close to expiring
-            if (self.method == "minimax"):
-                return self.minimax(game, depth, True)
+            if self.method == "minimax":
+                score, move = self.minimax(game, self.search_depth, True)
+                return move
 
-            elif(self.method == "alphabeta"):
-                return self.alphabeta(game, depth, True)
+            elif self.method == "alphabeta":
+                score, move = self.alphabeta(game, self.search_depth, True)
+                return move
 
         except Timeout:
             raise TimeoutError
@@ -202,26 +201,21 @@ class CustomPlayer:
                 to pass the project unit tests; you cannot call any other
                 evaluation function directly.
         """
-        if self.time_left() < self.TIMER_THRESHOLD:
-            raise Timeout()
 
-        legal_moves = game.get_legal_moves()
+        if not self.iterative:
+            if self.time_left() < self.TIMER_THRESHOLD:
+                raise Timeout()
+            return minimax(self, game, depth, maximizing_player)
 
-        if len(legal_moves) == 0:
-            return float("-inf"), (-1,-1)
-        if depth == 0:
-            if maximizing_player:
-                return get_max_move(self, game, legal_moves)
-            elif not maximizing_player:
-                return get_min_move(self, game, legal_moves)
         else:
-            if maximizing_player:
-                return max(self.minimax(game.forecast_move(move), depth - 1, False) for move in legal_moves)
+            best_score = None
+            best_move = None
 
-            elif not maximizing_player:
-                return min(self.minimax(game.forecast_move(move), depth - 1, True) for move in legal_moves)
-
-        raise NotImplementedError
+            for iterative_depth in range(0, depth):
+                if self.time_left() < self.TIMER_THRESHOLD:
+                    return best_score, best_move
+                best_score, best_move = minimax(self, game, depth, maximizing_player)
+            return best_score, best_move
 
     def alphabeta(self, game, depth, alpha=float("-inf"), beta=float("inf"), maximizing_player=True):
         """Implement minimax search with alpha-beta pruning as described in the
@@ -268,7 +262,7 @@ class CustomPlayer:
 
         if len(legal_moves) == 0:
 
-            return float("-inf"), (-1,-1)
+            return float("-inf"), (-1, -1)
 
         if depth == 0:
 
@@ -308,6 +302,41 @@ class CustomPlayer:
 
         raise NotImplementedError
 
+
+def minimax(player, game, depth, maximizing_player):
+    legal_moves = game.get_legal_moves()
+
+    if len(legal_moves) == 0:
+        return float("-inf"), (-1, -1)
+
+    if depth == 0:
+        if maximizing_player:
+            return get_max_move(player, game, legal_moves)
+        else:
+            return get_min_move(player, game, legal_moves)
+
+    else:
+        if maximizing_player:
+            max_score = float("-inf")
+            max_move = None
+            for move in legal_moves:
+                move_score, move = minimax(player, game.forecast_move(move), depth - 1, False)
+                if move_score > max_score:
+                    max_score = move_score
+                    max_move = move
+            return max_score, max_move
+
+        else:
+            min_score = float("inf")
+            min_move = None
+            for move in legal_moves:
+                move_score, move = minimax(player, game.forecast_move(move), depth - 1, False)
+                if move_score < min_score:
+                    min_score = move_score
+                    min_move = move
+            return min_score, min_move
+
+
 def get_max_move(player, game, legal_moves):
 
     max_score = float("-inf")
@@ -318,6 +347,7 @@ def get_max_move(player, game, legal_moves):
             max_score = player.score(game.forecast_move(move), player)
             max_score_move = move
     return max_score, max_score_move
+
 
 def get_min_move(player, game, legal_moves):
 
