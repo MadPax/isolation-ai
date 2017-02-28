@@ -211,11 +211,12 @@ class CustomPlayer:
             best_score = None
             best_move = None
 
-            for iterative_depth in range(0, depth):
+            iterative_depth = 1
+            while True:
                 if self.time_left() < self.TIMER_THRESHOLD:
                     return best_score, best_move
-                best_score, best_move = minimax(self, game, depth, maximizing_player)
-            return best_score, best_move
+                best_score, best_move = minimax(self, game, iterative_depth, maximizing_player)
+                iterative_depth += 1
 
     def alphabeta(self, game, depth, alpha=float("-inf"), beta=float("inf"), maximizing_player=True):
         """Implement minimax search with alpha-beta pruning as described in the
@@ -255,53 +256,21 @@ class CustomPlayer:
                 to pass the project unit tests; you cannot call any other
                 evaluation function directly.
         """
-        if self.time_left() < self.TIMER_THRESHOLD:
-            raise Timeout()
-
-        legal_moves = game.get_legal_moves()
-
-        if len(legal_moves) == 0:
-
-            return float("-inf"), (-1, -1)
-
-        if depth == 0:
-
-            if maximizing_player:
-                return get_max_move(self, game, legal_moves)
-
-            elif not maximizing_player:
-                return get_min_move(self, game, legal_moves)
+        if not self.iterative:
+            if self.time_left() < self.TIMER_THRESHOLD:
+                raise Timeout()
+            return alphabeta(self, game, depth, alpha, beta, maximizing_player)
 
         else:
+            best_score = None
+            best_move = None
 
-            if maximizing_player:
-                best_value = alpha
-                tuple_value = None
-                for move in legal_moves:
-                    temp, tuple = self.alphabeta(game.forecast_move(move), depth-1, alpha, beta, False)
-                    if temp > best_value:
-                        best_value = temp
-                        tuple_value = tuple
-                        alpha = max(alpha, best_value)
-                        if beta <= alpha:
-                            break
-                return best_value, tuple_value
-
-            elif not maximizing_player:
-                value = float("inf")
-                tuple_value = None
-                for move in legal_moves:
-                    temp, tuple = self.alphabeta(game.forecast_move(move), depth - 1, alpha, beta, True)
-                    if temp < value:
-                        value = temp
-                        tuple_value = tuple
-                        beta = min(beta, value)
-                        if beta <= alpha:
-                            break
-                return value, tuple_value
-
-        raise NotImplementedError
-
+            iterative_depth = 1
+            while True:
+                if self.time_left() < self.TIMER_THRESHOLD:
+                    return best_score, best_move
+                best_score, best_move = alphabeta(self, game, iterative_depth, alpha, beta, maximizing_player)
+                iterative_depth += 1
 
 def minimax(player, game, depth, maximizing_player):
     legal_moves = game.get_legal_moves()
@@ -309,7 +278,7 @@ def minimax(player, game, depth, maximizing_player):
     if len(legal_moves) == 0:
         return float("-inf"), (-1, -1)
 
-    if depth == 0:
+    if depth == 1:
         if maximizing_player:
             return get_max_move(player, game, legal_moves)
         else:
@@ -320,7 +289,7 @@ def minimax(player, game, depth, maximizing_player):
             max_score = float("-inf")
             max_move = None
             for move in legal_moves:
-                move_score, move = minimax(player, game.forecast_move(move), depth - 1, False)
+                move_score, placeholder = minimax(player, game.forecast_move(move), depth - 1, False)
                 if move_score > max_score:
                     max_score = move_score
                     max_move = move
@@ -330,11 +299,53 @@ def minimax(player, game, depth, maximizing_player):
             min_score = float("inf")
             min_move = None
             for move in legal_moves:
-                move_score, move = minimax(player, game.forecast_move(move), depth - 1, False)
+                move_score, placeholder = minimax(player, game.forecast_move(move), depth - 1, True)
                 if move_score < min_score:
                     min_score = move_score
                     min_move = move
             return min_score, min_move
+
+
+def alphabeta(player, game, depth, alpha, beta, maximizing_player):
+
+    legal_moves = game.get_legal_moves()
+
+    if len(legal_moves) == 0:
+        return float("-inf"), (-1, -1)
+
+    if depth == 1:
+        if maximizing_player:
+            return get_max_alphabeta_move(player, game, legal_moves, alpha, beta)
+
+        elif not maximizing_player:
+            return get_min_alphabeta_move(player, game, legal_moves, alpha, beta)
+
+    else:
+        if maximizing_player:
+            best_value = alpha
+            best_move = None
+            for move in legal_moves:
+                value, placeholder = alphabeta(player, game.forecast_move(move), depth - 1, alpha, beta, False)
+                if value > best_value:
+                    best_value = value
+                    best_move = move
+                    alpha = max(alpha, best_value)
+                    if beta <= alpha:
+                        break
+            return best_value, best_move
+        elif not maximizing_player:
+            best_value = beta
+            best_move = None
+            for move in legal_moves:
+                value, placeholder = alphabeta(player, game.forecast_move(move), depth - 1, alpha, beta, True)
+                if value < best_value:
+                    best_value = value
+                    best_move = move
+                    beta = min(beta, best_value)
+                    if beta <= alpha:
+                        break
+            return best_value, best_move
+
 
 
 def get_max_move(player, game, legal_moves):
@@ -343,8 +354,9 @@ def get_max_move(player, game, legal_moves):
     max_score_move = None
 
     for move in legal_moves:
-        if player.score(game.forecast_move(move), player) > max_score:
-            max_score = player.score(game.forecast_move(move), player)
+        score = player.score(game.forecast_move(move), player)
+        if score > max_score:
+            max_score = score
             max_score_move = move
     return max_score, max_score_move
 
@@ -355,7 +367,39 @@ def get_min_move(player, game, legal_moves):
     min_score_move = None
 
     for move in legal_moves:
-        if player.score(game.forecast_move(move), player) < min_score:
-            min_score = player.score(game.forecast_move(move), player)
+        score = player.score(game.forecast_move(move), player)
+        if score < min_score:
+            min_score = score
             min_score_move = move
+    return min_score, min_score_move
+
+def get_max_alphabeta_move(player, game, legal_moves, alpha, beta):
+
+    max_score = alpha
+    max_score_move = None
+
+    for move in legal_moves:
+        score = player.score(game.forecast_move(move), player)
+        if score > max_score:
+            max_score = score
+            max_score_move = move
+            alpha = max(alpha, max_score)
+            if beta <= alpha:
+                break
+    return max_score, max_score_move
+
+
+def get_min_alphabeta_move(player, game, legal_moves, alpha, beta):
+
+    min_score = beta
+    min_score_move = None
+
+    for move in legal_moves:
+        score = player.score(game.forecast_move(move), player)
+        if score < min_score:
+            min_score = score
+            min_score_move = move
+            beta = min(beta, min_score)
+            if beta <= alpha:
+                break
     return min_score, min_score_move

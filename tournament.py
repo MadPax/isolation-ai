@@ -117,7 +117,7 @@ def play_round(agents, num_matches):
 
         counts = {agent_1.player: 0., agent_2.player: 0.}
         names = [agent_1.name, agent_2.name]
-        print("  Match {}: {!s:^11} vs {!s:^11}".format(idx + 1, *names), end=' ')
+        print("  Match {}: {!s:^11} vs {!s:^11}".format(idx + 1, *names), ' ')
 
         # Each player takes a turn going first
         for p1, p2 in itertools.permutations((agent_1.player, agent_2.player)):
