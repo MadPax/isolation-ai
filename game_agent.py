@@ -36,7 +36,7 @@ def custom_score(game, player):
     float
         The heuristic value of the current game state to the specified player.
     """
-    return max_dist_from_center(game, player)
+    return min_dist_from_center(game, player)
 
 def min_dist_from_center(game, player):
 
